@@ -7,28 +7,28 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.view.TextureView;
 import android.view.Surface;
 import android.graphics.SurfaceTexture;
-import android.content.Context;
 import android.util.Size;
 import android.util.Log;
-
 import java.util.Arrays;
 
 public class MainActivity extends Activity {
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        setContentView(new MyGLSurfaceView(this));
+
         //setContentView(R.layout.activity_main);
 
         //create preview
-        mTextureView = new TextureView(this);
+        /*mTextureView = new TextureView(this);
         mTextureView.setSurfaceTextureListener(surfaceTextureListener);
         setContentView(mTextureView);
 
         mCameraManager  = (CameraManager)getSystemService(Context.CAMERA_SERVICE);
         getCameraInfo();
         if(mCameraId == null) {
-            Log.e("","can not find suitable camera");
+            Log.e(appTag,"can not find suitable camera");
         }
         else {
             try {
@@ -37,9 +37,8 @@ public class MainActivity extends Activity {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-        }
+        }*/
     }
-
     @Override
     protected void onStop() {
         super.onStop();
@@ -169,8 +168,9 @@ public class MainActivity extends Activity {
     private CaptureRequest.Builder mRequestBuilder;
     private String mCameraId = null;
     private Size mSurfaceTextureResolution;
-
     private TextureView mTextureView;
     private Surface mSurface = null;
     private SurfaceTexture mSurfaceTexture = null;
+
+    public static String appTag = "myTag";
 }
