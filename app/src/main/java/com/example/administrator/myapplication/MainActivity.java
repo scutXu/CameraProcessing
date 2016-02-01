@@ -1,43 +1,37 @@
 package com.example.administrator.myapplication;
 
 import android.app.Activity;
+import android.content.Context;
+import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.hardware.camera2.*;
 import android.hardware.camera2.params.StreamConfigurationMap;
-import android.view.TextureView;
+import android.os.Looper;
 import android.view.Surface;
 import android.graphics.SurfaceTexture;
 import android.util.Size;
 import android.util.Log;
 import java.util.Arrays;
+import android.os.Handler;
+import java.lang.Runnable;
 
 public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setContentView(new MyGLSurfaceView(this));
+        mActivityThreadHandler = new Handler(Looper.getMainLooper());
+
+        mGLSurfaceView = new MyGLSurfaceView(this);
+        setContentView(mGLSurfaceView);
 
         //setContentView(R.layout.activity_main);
 
-        //create preview
-        /*mTextureView = new TextureView(this);
-        mTextureView.setSurfaceTextureListener(surfaceTextureListener);
-        setContentView(mTextureView);
-
         mCameraManager  = (CameraManager)getSystemService(Context.CAMERA_SERVICE);
-        getCameraInfo();
+        getCameraInfo();                //get the camera id and first resolution
         if(mCameraId == null) {
             Log.e(appTag,"can not find suitable camera");
         }
-        else {
-            try {
-                mCameraManager.openCamera(mCameraId, deviceCallback, null);
-            } catch (CameraAccessException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }*/
     }
     @Override
     protected void onStop() {
@@ -47,6 +41,12 @@ public class MainActivity extends Activity {
 
 
     //methods
+    public void createSurfaceTexture(int glTextureObject) {
+        mSurfaceTexture = new SurfaceTexture(glTextureObject);
+        mSurfaceTexture.setDefaultBufferSize(mSurfaceTextureResolution.getWidth(), mSurfaceTextureResolution.getHeight());
+        mSurface = new Surface(mSurfaceTexture);
+        openCamera();
+    }
     private void getCameraInfo() {
         try {
             for (String cameraId : mCameraManager.getCameraIdList()) {
@@ -83,15 +83,21 @@ public class MainActivity extends Activity {
             e.printStackTrace();
         }
     }
+    private void openCamera() {
+        try {
+            mCameraManager.openCamera(mCameraId, deviceCallback, mActivityThreadHandler);
+        } catch (CameraAccessException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
 
-    //callbacks
+    //embedded class
     private CameraDevice.StateCallback deviceCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(CameraDevice camera) {
             mCameraDevice = camera;
-            if(mSurface !=null) {
-                startCapture();
-            }
+            startCapture();
         }
 
         @Override
@@ -102,35 +108,6 @@ public class MainActivity extends Activity {
         @Override
         public void onError(CameraDevice camera, int error) {
             // TODO Auto-generated method stub
-        }
-    };
-    private TextureView.SurfaceTextureListener surfaceTextureListener = new TextureView.SurfaceTextureListener() {
-
-        @Override
-        public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-            // TODO Auto-generated method stub
-        }
-
-        @Override
-        public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-            // TODO Auto-generated method stub
-        }
-
-        @Override
-        public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-            // TODO Auto-generated method stub
-            return false;
-        }
-
-        @Override
-        public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-            // TODO Auto-generated method stub
-            mSurfaceTexture = surface;
-            mSurfaceTexture.setDefaultBufferSize(mSurfaceTextureResolution.getWidth(),mSurfaceTextureResolution.getHeight());
-            mSurface = new Surface(mSurfaceTexture);
-            if(mCameraDevice != null) {
-                startCapture();
-            }
         }
     };
     private CameraCaptureSession.StateCallback sessionStateCallback = new CameraCaptureSession.StateCallback() {
@@ -154,10 +131,10 @@ public class MainActivity extends Activity {
         }
     };
     private CameraCaptureSession.CaptureCallback captureCallback = new CameraCaptureSession.CaptureCallback() {
-
         @Override
         public void onCaptureCompleted (CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
-
+            //mSurfaceTexture.updateTexImage();     should be invoked in the thread that holding the gl context
+            mGLSurfaceView.requestRender();
         }
     };
 
@@ -168,9 +145,9 @@ public class MainActivity extends Activity {
     private CaptureRequest.Builder mRequestBuilder;
     private String mCameraId = null;
     private Size mSurfaceTextureResolution;
-    private TextureView mTextureView;
     private Surface mSurface = null;
-    private SurfaceTexture mSurfaceTexture = null;
-
+    public SurfaceTexture mSurfaceTexture = null;
+    private GLSurfaceView mGLSurfaceView;
+    private Handler mActivityThreadHandler;
     public static String appTag = "myTag";
 }
