@@ -4,4 +4,5 @@ uniform samplerExternalOES tex;
 varying vec2 uv;
 void main() {
 	gl_FragColor = texture2D(tex,uv);
+	//gl_FragColor = vec4(uv,0,1);
 }

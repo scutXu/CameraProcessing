@@ -22,10 +22,11 @@ import java.nio.FloatBuffer;
 
 public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
-    MyGLSurfaceView(Context context) {
+    MyGLSurfaceView(MainActivity context) {
         super(context);
         setEGLContextClientVersion(2);
         setRenderer(this);
+        mMainActivity = context;
     }
 
     @Override
@@ -57,12 +58,24 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         // TODO Auto-generated method stub
+        float ratio = mMainActivity.getCameraResolutionRatio();
+        if(ratio > 0.000001f) {
+            if(width > height) {
+                height = (int)(((float)(width)) / ratio);
+            }
+            else {
+                width = (int)(height * ratio);
+            }
+        }
         GLES20.glViewport(0, 0, width, height);
+
+        //debug test
+        //Log.i("ttt",Integer.toString(width) + "---" + Integer.toString(height));
     }
 
     @Override
     public void onDrawFrame(GL10 gl) {
-        ((MainActivity)(getContext())).updateSurfaceTexture();
+        mMainActivity.updateSurfaceTexture();
 
         // TODO Auto-generated method stub
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
@@ -89,8 +102,7 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         return  shader;
     }
     private void createPrograms() {
-        Context context = getContext();
-        Resources res = context.getResources();
+        Resources res = mMainActivity.getResources();
 
         //int resId = res.getIdentifier("normal", "raw", context.getPackageName());
 
@@ -136,7 +148,7 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GL10.GL_TEXTURE_WRAP_S, GL10.GL_CLAMP_TO_EDGE);
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GL10.GL_TEXTURE_WRAP_T, GL10.GL_CLAMP_TO_EDGE);
         mBackgroundTexture = textures[0];
-        ((MainActivity)(getContext())).createSurfaceTexture(mBackgroundTexture);
+        mMainActivity.createSurfaceTexture(mBackgroundTexture);
 
         //debug test texture
         /*float [] pixels = {
@@ -157,4 +169,5 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private FloatBuffer mVertices;
     private int mPosAttrib;
     private int mTexUniform;
+    MainActivity mMainActivity;
 }

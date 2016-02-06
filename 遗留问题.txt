@@ -1,4 +1,7 @@
 1)如果代码这样写,则Activity线程的循环会阻塞GLSurfaceView的线程，Renderer::onSurfaceCreated没有被调用
-GLSurfaceView::setRenderer -> openCamera -> ... -> onOpened -> loop in Activity thread
+GLSurfaceView::setRenderer -> openCamera -> event loop in Activity thread -> onOpened -> manual loop in Activity thread
+			  |-> event loop in Render thread -> onSurfaceCreated
 
 2)纹理的filter mode设为linear会显示不出来，要设为nearest
+
+3)用SurfaceTexture存储相机捕捉的图像，作为纹理绘制到opengl屏幕，呈现的图像是上下镜像的

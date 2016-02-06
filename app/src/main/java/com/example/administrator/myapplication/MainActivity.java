@@ -44,6 +44,8 @@ public class MainActivity extends Activity {
     public void createSurfaceTexture(int glTextureObject) {
         mSurfaceTexture = new SurfaceTexture(glTextureObject);
         mSurfaceTexture.setDefaultBufferSize(mSurfaceTextureResolution.getWidth(), mSurfaceTextureResolution.getHeight());
+        mSurface = new Surface(mSurfaceTexture);
+        openCamera();
 
         //debug test,got identity matrix
         /*float [] matrix = new float[16];
@@ -51,13 +53,14 @@ public class MainActivity extends Activity {
         for(int i=0;i<16;++i) {
             Log.i("ttt",Float.toString(matrix[i]));
         }*/
-
-        mSurface = new Surface(mSurfaceTexture);
-        openCamera();
     }
     public void updateSurfaceTexture() {
         mSurfaceTexture.updateTexImage();
     }
+    public float getCameraResolutionRatio() {
+        return (float)(mSurfaceTextureResolution.getWidth()) / (float)(mSurfaceTextureResolution.getHeight());
+    }
+
     private void getCameraInfo() {
         try {
             for (String cameraId : mCameraManager.getCameraIdList()) {
