@@ -4,7 +4,6 @@ package com.example.administrator.myapplication;
  * Created by Administrator on 2016/1/16.
  */
 
-import android.content.Context;
 import android.content.res.Resources;
 import android.opengl.GLES11Ext;
 import android.opengl.GLSurfaceView;
@@ -22,11 +21,11 @@ import java.nio.FloatBuffer;
 
 public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
-    MyGLSurfaceView(MainActivity context) {
+    MyGLSurfaceView(MainActivity context,CameraPreviewFragment fragment) {
         super(context);
         setEGLContextClientVersion(2);
         setRenderer(this);
-        mMainActivity = context;
+        mFragment = fragment;
     }
 
     @Override
@@ -34,15 +33,6 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         // TODO Auto-generated method stub
 
         GLES20.glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-
-
-        createPrograms();
-
-        createTexture();
-
-
-
-
         float [] vertices = new float[] {
                 -1,-1,
                 1,-1,
@@ -53,12 +43,18 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         bb.order(ByteOrder.nativeOrder());
         mVertices = bb.asFloatBuffer();
         mVertices.put(vertices).position(0);
+
+        createTexture();
+
+        createPrograms();
+
+        mFragment.onGLViewAvailable();
     }
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         // TODO Auto-generated method stub
-        float ratio = mMainActivity.getCameraResolutionRatio();
+        float ratio = mFragment.getCameraResolutionRatio();
         if(ratio > 0.000001f) {
             if(width > height) {
                 height = (int)(((float)(width)) / ratio);
@@ -75,7 +71,7 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
     @Override
     public void onDrawFrame(GL10 gl) {
-        mMainActivity.updateSurfaceTexture();
+        mFragment.updateSurfaceTexture();
 
         // TODO Auto-generated method stub
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
@@ -102,7 +98,7 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         return  shader;
     }
     private void createPrograms() {
-        Resources res = mMainActivity.getResources();
+        Resources res = getContext().getResources();
 
         //int resId = res.getIdentifier("normal", "raw", context.getPackageName());
 
@@ -148,7 +144,8 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GL10.GL_TEXTURE_WRAP_S, GL10.GL_CLAMP_TO_EDGE);
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GL10.GL_TEXTURE_WRAP_T, GL10.GL_CLAMP_TO_EDGE);
         mBackgroundTexture = textures[0];
-        mMainActivity.createSurfaceTexture(mBackgroundTexture);
+        mFragment.createSurfaceTexture(mBackgroundTexture);
+
 
         //debug test texture
         /*float [] pixels = {
@@ -169,5 +166,5 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private FloatBuffer mVertices;
     private int mPosAttrib;
     private int mTexUniform;
-    MainActivity mMainActivity;
+    CameraPreviewFragment mFragment;
 }
