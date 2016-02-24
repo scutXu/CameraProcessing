@@ -11,6 +11,9 @@ public class MainActivity extends Activity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        EffectManager effectManager = EffectManager.getInstance();
+        effectManager.setContext(this);
+        effectManager.readConfigFile();
         if(null == savedInstanceState) {
             FragmentTransaction transaction = getFragmentManager().beginTransaction();
             transaction.replace(R.id.fragment_container,new CameraPreviewFragment());

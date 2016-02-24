@@ -6,4 +6,8 @@ GLSurfaceView::setRenderer -> openCamera -> event loop in Activity thread -> onO
 
 3)用SurfaceTexture存储相机捕捉的图像，作为纹理绘制到opengl屏幕，呈现的图像是上下镜像的
 
-4)当为ImageReader指定ImageFormat（而非PixelFormat）时，解压后得到的像素数据的格式是？
+4)当为ImageReader指定JPEG格式时，解压图像后得到的数据的像素格式是？
+
+5）CameraCaptureSession.CaptureCallback::onCaptureCompleted和 ::onCaptureProgressed的本质区别是？
+
+6）CameraPreviewFragment被replace后，GLSurfaceView关联的渲染上下文会被销毁，opengl资源句柄会失效

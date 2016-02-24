@@ -1,6 +1,7 @@
 package com.example.administrator.myapplication;
 
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.FragmentTransaction;
 import android.content.Context;
@@ -23,16 +24,21 @@ import android.os.Bundle;
 import android.app.Fragment;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Size;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -67,11 +73,28 @@ public class CameraPreviewFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
-        Log.i("lifeCycle","FragmentOnCreateView");
+        Log.i("lifeCycle", "FragmentOnCreateView");
 
+        View fragmentView = inflater.inflate(R.layout.preview_fragment,container,false);
+
+        FrameLayout previewContainer = (FrameLayout)(fragmentView.findViewById(R.id.preview_container));
         mGLSurfaceView = new MyGLSurfaceView(mActivity,this);
         mGLSurfaceView.setOnClickListener(clickListener);
-        return  mGLSurfaceView;
+        mGLSurfaceView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        previewContainer.addView(mGLSurfaceView);
+
+        String [] effectNames = EffectManager.getInstance().getAllEffectNames();
+        RadioGroup radioGroup = (RadioGroup)(fragmentView.findViewById(R.id.radioGroup1));
+        for(int i=0;i<effectNames.length;++i) {
+            RadioButton radioButton = new RadioButton(getActivity());
+            radioButton.setText(effectNames[i]);
+            radioGroup.addView(radioButton);
+            if(i == 0) {
+                radioButton.setChecked(true);
+            }
+        }
+        radioGroup.setOnCheckedChangeListener(checkedChangeListener);
+        return  fragmentView;
     }
 
     @Override
@@ -90,6 +113,7 @@ public class CameraPreviewFragment extends Fragment {
         mSurfaceTexture.setDefaultBufferSize(mSurfaceTextureResolution.getWidth(), mSurfaceTextureResolution.getHeight());
         mSurface = new Surface(mSurfaceTexture);
 
+
         //debug test,got identity matrix
         /*float [] matrix = new float[16];
         mSurfaceTexture.getTransformMatrix(matrix);
@@ -101,6 +125,7 @@ public class CameraPreviewFragment extends Fragment {
         mSurfaceTexture.updateTexImage();
     }
     public float getCameraResolutionRatio() {
+        //Log.i("abc",Integer.toString(mSurfaceTextureResolution.getWidth()) + " " + Integer.toString(mSurfaceTextureResolution.getHeight()));
         return (float)(mSurfaceTextureResolution.getWidth()) / (float)(mSurfaceTextureResolution.getHeight());
     }
 
@@ -125,8 +150,7 @@ public class CameraPreviewFragment extends Fragment {
                     Size imageResolution = (map.getOutputSizes(mCameraImageFormat))[0];
                     mImageReader = ImageReader.newInstance(imageResolution.getWidth(), imageResolution.getHeight(),
                             mCameraImageFormat, 2);
-                    mImageReader.setOnImageAvailableListener(
-                            imageAvailableListener, null);
+                    mImageReader.setOnImageAvailableListener(imageAvailableListener, null);
                     Size [] choices = map.getOutputSizes(SurfaceTexture.class);
                     boolean found = false;
                     for(int i=0;i<choices.length;++i) {
@@ -134,6 +158,8 @@ public class CameraPreviewFragment extends Fragment {
                         if(imageResolution.getWidth() * size.getHeight() == imageResolution.getHeight() * size.getWidth()) {
                             mSurfaceTextureResolution = size;
                             found = true;
+                            Log.i(MainActivity.appTag,"Resolution:" + Integer.toString(imageResolution.getWidth()) + " " + Integer.toString(imageResolution.getHeight())
+                                    + " " + Integer.toString(size.getWidth()) + " " + Integer.toString(size.getHeight()) );
                             break;
                         }
                     }
@@ -242,6 +268,13 @@ public class CameraPreviewFragment extends Fragment {
             captureImage();
         }
     };
+    private RadioGroup.OnCheckedChangeListener checkedChangeListener = new RadioGroup.OnCheckedChangeListener() {
+        @Override
+        public void onCheckedChanged(RadioGroup group, int checkedId) {
+            RadioButton radioButton = (RadioButton) (group.findViewById(checkedId));
+            mGLSurfaceView.useEffect(radioButton.getText().toString());
+        }
+    };
     private ImageReader.OnImageAvailableListener imageAvailableListener = new ImageReader.OnImageAvailableListener() {
         @Override
         public void onImageAvailable(ImageReader reader) {
@@ -249,30 +282,6 @@ public class CameraPreviewFragment extends Fragment {
             IntBuffer ib = IntBuffer.allocate(image.getWidth() * image.getHeight());
             Utils.yuv420888ToArgb888(image, ib);
             Bitmap bitmap = Bitmap.createBitmap(image.getWidth(),image.getHeight(),mBitmapFormat);
-
-            /*Image.Plane yPlane = image.getPlanes()[0];
-            ByteBuffer yBuffer = yPlane.getBuffer();
-            int yRowStride = yPlane.getRowStride();
-            int y;
-            int [] rgb = new int[3];
-            int count = 0;
-            for(int i=0;i<image.getHeight();++i) {
-                for(int j=0;j<image.getWidth();++j) {
-                    int pixel = 0;
-                    y = Utils.getUnsignedByte(yBuffer.get(yRowStride * i + j));
-                    rgb[0] = y;
-                    rgb[1] = y;
-                    rgb[2] = y;
-                    for(int k=0;k<3;++k) {
-                        rgb[k] = rgb[k] < 0 ? 0 :(rgb[k] > 255 ? 255 : rgb[k]);
-                        int value = rgb[k] << (k * 8);
-                        pixel = pixel | value;
-                    }
-                    pixel = pixel | (0x0FF << 24);
-                    bitmap.setPixel(j,i,pixel);
-                    ++count;
-                }
-            }*/
             bitmap.copyPixelsFromBuffer(ib);
             image.close();
             ImageDisplayFragment imageDisplayFragment = new ImageDisplayFragment();
@@ -299,7 +308,7 @@ public class CameraPreviewFragment extends Fragment {
     private Size mSurfaceTextureResolution;
     private Surface mSurface = null;
     private SurfaceTexture mSurfaceTexture = null;
-    private GLSurfaceView mGLSurfaceView;
+    private MyGLSurfaceView mGLSurfaceView;
     private MainActivity mActivity;
     private Handler mMainThreadHandler;
     private ImageReader mImageReader;

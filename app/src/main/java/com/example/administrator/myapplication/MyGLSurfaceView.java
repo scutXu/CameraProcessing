@@ -10,6 +10,8 @@ import android.opengl.GLSurfaceView;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 import android.opengl.GLES20;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import java.io.IOException;
@@ -46,24 +48,33 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
         createTexture();
 
-        createPrograms();
+        EffectManager.getInstance().loadEffects();
+
+        useEffect("normal");
+        //useEffect("monochrome");
+
+
 
         mFragment.onGLViewAvailable();
+
     }
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         // TODO Auto-generated method stub
+        //Log.i("ttt",Integer.toString(width) + "---" + Integer.toString(height));
+
+        int newWidth = width, newHeight = height;
         float ratio = mFragment.getCameraResolutionRatio();
         if(ratio > 0.000001f) {
-            if(width > height) {
-                height = (int)(((float)(width)) / ratio);
+            if(width < height) {
+                newHeight = (int)(((float)(width)) / ratio);
             }
             else {
-                width = (int)(height * ratio);
+                newWidth = (int)(height * ratio);
             }
         }
-        GLES20.glViewport(0, 0, width, height);
+        GLES20.glViewport((width - newWidth) / 2, (height - newHeight) / 2, newWidth, newHeight);
 
         //debug test
         //Log.i("ttt",Integer.toString(width) + "---" + Integer.toString(height));
@@ -75,65 +86,32 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
         // TODO Auto-generated method stub
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-        GLES20.glEnableVertexAttribArray(mPosAttrib);
-        GLES20.glVertexAttribPointer(mPosAttrib, 2, GLES20.GL_FLOAT, false, 0, mVertices);
+        if(mEffectDirty) {
+            refreshEffect();
+            mEffectDirty = false;
+        }
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_FAN, 0, 4);
     }
 
-
-    private  static int createShader(int type,String code) {
-        Log.i(MainActivity.appTag, code);
-        int shader = GLES20.glCreateShader(type);
-        int [] compileStatus = new int[1];
-        GLES20.glShaderSource(shader, code);
-        GLES20.glCompileShader(shader);
-        GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compileStatus, 0);
-        if(compileStatus[0] != GLES20.GL_TRUE) {
-            Log.e(MainActivity.appTag,"compile shader fail");
-            String info = GLES20.glGetShaderInfoLog(shader);
-            Log.e(MainActivity.appTag,code);
-            Log.e(MainActivity.appTag,info);
-            GLES20.glDeleteShader(shader);
-        }
-        return  shader;
-    }
-    private void createPrograms() {
-        Resources res = getContext().getResources();
-
-        //int resId = res.getIdentifier("normal", "raw", context.getPackageName());
-
-        //create vertex shader
-        InputStream input = res.openRawResource(R.raw.vertex_shader);
-        String text = Utils.getString(input);
-        try {
-            input.close();
-        } catch(IOException e) {
-            e.printStackTrace();
-        }
-        int vertexShader = createShader(GLES20.GL_VERTEX_SHADER,text);
-
-        //create fragment shaders
-        input = res.openRawResource(R.raw.normal);
-        text = Utils.getString(input);
-        try {
-            input.close();
-        } catch(IOException e) {
-            e.printStackTrace();
-        }
-        int fragmentShader = createShader(GLES20.GL_FRAGMENT_SHADER,text);
-
-        //create programs
-        int program = GLES20.glCreateProgram();
-        GLES20.glAttachShader(program,vertexShader);
-        GLES20.glAttachShader(program, fragmentShader);
-        GLES20.glLinkProgram(program);
-
-
+    private void refreshEffect() {
+        Effect effect = EffectManager.getInstance().getEffect(mCurrentEffect);
+        int program = effect.getProgram();
         GLES20.glUseProgram(program);
-        mPosAttrib = GLES20.glGetAttribLocation(program, "pos");
-        mTexUniform = GLES20.glGetUniformLocation(program, "tex");
-        GLES20.glUniform1i(mTexUniform, 0);
+        int posAttrib = GLES20.glGetAttribLocation(program, "pos");
+        int texUni = GLES20.glGetUniformLocation(program, "tex");
+        GLES20.glUniform1i(texUni, 0);
+        GLES20.glEnableVertexAttribArray(posAttrib);
+        GLES20.glVertexAttribPointer(posAttrib, 2, GLES20.GL_FLOAT, false, 0, mVertices);
     }
+
+    public void useEffect(String name) {
+        if(mCurrentEffect != name) {
+            mCurrentEffect = name;
+            mEffectDirty = true;
+        }
+    }
+
+
     private void createTexture() {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);   //unnecessary to invoke if there is only one texture unit
         int[] textures = new int[1];
@@ -146,25 +124,14 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         mBackgroundTexture = textures[0];
         mFragment.createSurfaceTexture(mBackgroundTexture);
 
-
-        //debug test texture
-        /*float [] pixels = {
-                1,0,0,
-                0,1,0,
-                0,0,1,
-                1,1,0
-        };
-        ByteBuffer aaa = ByteBuffer.allocateDirect(pixels.length * 4);
-        aaa.order(ByteOrder.nativeOrder());
-        FloatBuffer ttt = aaa.asFloatBuffer();
-        ttt.put(pixels).position(0);
-        GL10.glTexImage2D(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0, GLES20.GL_RGB, 2, 2, 0, GLES20.GL_RGB, GLES20.GL_FLOAT, ttt);*/
     }
 
+
     private int mBackgroundTexture;
-    private int [] mShaderPrograms;
     private FloatBuffer mVertices;
     private int mPosAttrib;
     private int mTexUniform;
-    CameraPreviewFragment mFragment;
+    private  CameraPreviewFragment mFragment;
+    private String mCurrentEffect;
+    private boolean mEffectDirty;
 }
