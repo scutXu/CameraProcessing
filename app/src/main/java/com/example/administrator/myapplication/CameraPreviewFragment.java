@@ -35,6 +35,7 @@ import android.widget.FrameLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
@@ -279,10 +280,10 @@ public class CameraPreviewFragment extends Fragment {
         @Override
         public void onImageAvailable(ImageReader reader) {
             Image image = reader.acquireLatestImage();
-            IntBuffer ib = IntBuffer.allocate(image.getWidth() * image.getHeight());
-            Utils.yuv420888ToArgb888(image, ib);
+            ByteBuffer argbBuffer = ByteBuffer.allocateDirect(image.getWidth() * image.getHeight() * 4);
+            Utils.yuv420888ToArgb888(image, argbBuffer);
             Bitmap bitmap = Bitmap.createBitmap(image.getWidth(),image.getHeight(),mBitmapFormat);
-            bitmap.copyPixelsFromBuffer(ib);
+            bitmap.copyPixelsFromBuffer(argbBuffer);
             image.close();
             ImageDisplayFragment imageDisplayFragment = new ImageDisplayFragment();
             imageDisplayFragment.setDisplayBitmap(bitmap);
