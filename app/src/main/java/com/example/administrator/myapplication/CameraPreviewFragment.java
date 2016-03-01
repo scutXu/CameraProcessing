@@ -129,7 +129,9 @@ public class CameraPreviewFragment extends Fragment {
         //Log.i("abc",Integer.toString(mSurfaceTextureResolution.getWidth()) + " " + Integer.toString(mSurfaceTextureResolution.getHeight()));
         return (float)(mSurfaceTextureResolution.getWidth()) / (float)(mSurfaceTextureResolution.getHeight());
     }
-
+    public Size getSurfaceTextureResolution() {
+        return mSurfaceTextureResolution;
+    }
 
     private void queryCameraInfo() {
         try {

@@ -13,6 +13,7 @@ import android.opengl.GLES20;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.util.Size;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -99,7 +100,17 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         GLES20.glUseProgram(program);
         int posAttrib = GLES20.glGetAttribLocation(program, "pos");
         int texUni = GLES20.glGetUniformLocation(program, "tex");
+        int normalizedPixelWidthUni = GLES20.glGetUniformLocation(program,"dWidth");
+        int normalizedPixelHeightUni = GLES20.glGetUniformLocation(program,"dHeight");
+
         GLES20.glUniform1i(texUni, 0);
+        Size textureSize = mFragment.getSurfaceTextureResolution();
+        if(normalizedPixelHeightUni >= 0) {
+            GLES20.glUniform1f(normalizedPixelHeightUni,1.0f / textureSize.getHeight());
+        }
+        if(normalizedPixelWidthUni >= 0) {
+            GLES20.glUniform1f(normalizedPixelWidthUni,1.0f / textureSize.getWidth());
+        }
         GLES20.glEnableVertexAttribArray(posAttrib);
         GLES20.glVertexAttribPointer(posAttrib, 2, GLES20.GL_FLOAT, false, 0, mVertices);
     }
@@ -129,8 +140,6 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
     private int mBackgroundTexture;
     private FloatBuffer mVertices;
-    private int mPosAttrib;
-    private int mTexUniform;
     private  CameraPreviewFragment mFragment;
     private String mCurrentEffect;
     private boolean mEffectDirty;
